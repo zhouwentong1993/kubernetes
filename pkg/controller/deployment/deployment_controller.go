@@ -565,6 +565,7 @@ func (dc *DeploymentController) getPodMapForDeployment(d *apps.Deployment, rsLis
 
 // syncDeployment will sync the deployment with the given key.
 // This function is not meant to be invoked concurrently with the same key.
+// 同步 Deployment 对象
 func (dc *DeploymentController) syncDeployment(key string) error {
 	startTime := time.Now()
 	klog.V(4).Infof("Started syncing deployment %q (%v)", key, startTime)
@@ -576,6 +577,7 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 	if err != nil {
 		return err
 	}
+	// 获取指定的 deployment 资源
 	deployment, err := dc.dLister.Deployments(namespace).Get(name)
 	if errors.IsNotFound(err) {
 		klog.V(2).Infof("Deployment %v has been deleted", key)
@@ -601,6 +603,7 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 
 	// List ReplicaSets owned by this Deployment, while reconciling ControllerRef
 	// through adoption/orphaning.
+	// 查找关联到该 deployment 的 rs
 	rsList, err := dc.getReplicaSetsForDeployment(d)
 	if err != nil {
 		return err
@@ -610,6 +613,7 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 	//
 	// * check if a Pod is labeled correctly with the pod-template-hash label.
 	// * check that no old Pods are running in the middle of Recreate Deployments.
+	// 找到 pod map
 	podMap, err := dc.getPodMapForDeployment(d, rsList)
 	if err != nil {
 		return err
@@ -626,6 +630,7 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 		return err
 	}
 
+	// 如果该 Deployment 处于暂停状态？？？
 	if d.Spec.Paused {
 		return dc.sync(d, rsList)
 	}
@@ -641,15 +646,17 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 	if err != nil {
 		return err
 	}
+	// 如果是扩容或者缩容事件
 	if scalingEvent {
 		return dc.sync(d, rsList)
 	}
 
+	// 扩缩容策略
 	switch d.Spec.Strategy.Type {
-	case apps.RecreateDeploymentStrategyType:
-		return dc.rolloutRecreate(d, rsList, podMap)
-	case apps.RollingUpdateDeploymentStrategyType:
-		return dc.rolloutRolling(d, rsList)
+		case apps.RecreateDeploymentStrategyType:
+			return dc.rolloutRecreate(d, rsList, podMap)
+		case apps.RollingUpdateDeploymentStrategyType:
+			return dc.rolloutRolling(d, rsList)
 	}
 	return fmt.Errorf("unexpected deployment strategy type: %s", d.Spec.Strategy.Type)
 }
