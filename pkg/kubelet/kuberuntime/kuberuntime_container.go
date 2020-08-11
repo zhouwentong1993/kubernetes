@@ -131,10 +131,12 @@ func (s *startSpec) getTargetID(podStatus *kubecontainer.PodStatus) (*kubecontai
 // * create the container
 // * start the container
 // * run the post start lifecycle hooks (if applicable)
+// FIXME 启动容器的详细代码
 func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandboxConfig *runtimeapi.PodSandboxConfig, spec *startSpec, pod *v1.Pod, podStatus *kubecontainer.PodStatus, pullSecrets []v1.Secret, podIP string, podIPs []string) (string, error) {
 	container := spec.container
 
 	// Step 1: pull the image.
+	// 拉取镜像
 	imageRef, msg, err := m.imagePuller.EnsureImageExists(pod, container, pullSecrets, podSandboxConfig)
 	if err != nil {
 		s, _ := grpcstatus.FromError(err)
@@ -144,6 +146,7 @@ func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandb
 
 	// Step 2: create the container.
 	// For a new container, the RestartCount should be 0
+	// 创建镜像
 	restartCount := 0
 	containerStatus := podStatus.FindContainerStatusByName(container.Name)
 	if containerStatus != nil {
@@ -182,6 +185,7 @@ func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandb
 	m.recordContainerEvent(pod, container, containerID, v1.EventTypeNormal, events.CreatedContainer, fmt.Sprintf("Created container %s", container.Name))
 
 	// Step 3: start the container.
+	// 启动镜像
 	err = m.runtimeService.StartContainer(containerID)
 	if err != nil {
 		s, _ := grpcstatus.FromError(err)
@@ -210,6 +214,8 @@ func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandb
 	}
 
 	// Step 4: execute the post start hook.
+	// 执行 post start 钩子函数，函数平台通过轮询这个钩子函数实现的优雅部署？
+	// TODO 问题：container 已经启动了，为什么再去调用钩子呢？
 	if container.Lifecycle != nil && container.Lifecycle.PostStart != nil {
 		kubeContainerID := kubecontainer.ContainerID{
 			Type: m.runtimeName,

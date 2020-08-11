@@ -40,6 +40,7 @@ import (
 )
 
 const (
+	// 默认的沙箱，通过这个实现网络的互通
 	defaultSandboxImage = "k8s.gcr.io/pause:3.2"
 
 	// Various default sandbox resources requests/limits.
@@ -86,10 +87,12 @@ func (ds *dockerService) clearNetworkReady(podSandboxID string) {
 // For docker, PodSandbox is implemented by a container holding the network
 // namespace for the pod.
 // Note: docker doesn't use LogDirectory (yet).
+// 沙箱指的就是 pause 容器
 func (ds *dockerService) RunPodSandbox(ctx context.Context, r *runtimeapi.RunPodSandboxRequest) (*runtimeapi.RunPodSandboxResponse, error) {
 	config := r.GetConfig()
 
 	// Step 1: Pull the image for the sandbox.
+	// 拉取 pause 容器
 	image := defaultSandboxImage
 	podSandboxImage := ds.podSandboxImage
 	if len(podSandboxImage) != 0 {
@@ -104,6 +107,7 @@ func (ds *dockerService) RunPodSandbox(ctx context.Context, r *runtimeapi.RunPod
 	}
 
 	// Step 2: Create the sandbox container.
+	// 创建沙箱
 	if r.GetRuntimeHandler() != "" && r.GetRuntimeHandler() != runtimeName {
 		return nil, fmt.Errorf("RuntimeHandler %q not supported", r.GetRuntimeHandler())
 	}
@@ -131,6 +135,7 @@ func (ds *dockerService) RunPodSandbox(ctx context.Context, r *runtimeapi.RunPod
 	}(&err)
 
 	// Step 3: Create Sandbox Checkpoint.
+	// 创建检查点
 	if err = ds.checkpointManager.CreateCheckpoint(createResp.ID, constructPodSandboxCheckpoint(config)); err != nil {
 		return nil, err
 	}
@@ -172,6 +177,7 @@ func (ds *dockerService) RunPodSandbox(ctx context.Context, r *runtimeapi.RunPod
 	// sandbox networking, but it might insert iptables rules or open ports
 	// on the host as well, to satisfy parts of the pod spec that aren't
 	// recognized by the CNI standard yet.
+	// 设置沙箱网络
 	cID := kubecontainer.BuildContainerID(runtimeName, createResp.ID)
 	networkOptions := make(map[string]string)
 	if dnsConfig := config.GetDnsConfig(); dnsConfig != nil {

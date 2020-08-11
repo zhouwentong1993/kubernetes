@@ -37,6 +37,7 @@ type internalContainerLifecycleImpl struct {
 	topologyManager topologymanager.Manager
 }
 
+// 为镜像分配资源，CPU 资源
 func (i *internalContainerLifecycleImpl) PreStartContainer(pod *v1.Pod, container *v1.Container, containerID string) error {
 	if i.cpuManager != nil {
 		err := i.cpuManager.AddContainer(pod, container, containerID)

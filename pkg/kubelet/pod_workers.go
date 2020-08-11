@@ -78,6 +78,7 @@ type PodWorkers interface {
 }
 
 // syncPodOptions provides the arguments to a SyncPod operation.
+// Options 模式在 K8s 中也有比较多的用处
 type syncPodOptions struct {
 	// the mirror pod for the pod to sync, if it is a static pod
 	mirrorPod *v1.Pod

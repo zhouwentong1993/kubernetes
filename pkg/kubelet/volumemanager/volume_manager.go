@@ -358,6 +358,8 @@ func (vm *volumeManager) MarkVolumesAsReportedInUse(
 	vm.desiredStateOfWorld.MarkVolumesReportedInUse(volumesReportedAsInUse)
 }
 
+// 等待 volume 挂载
+// pod 挂载的 volume 在重启时要给它再挂回来，如何实现的呢？？
 func (vm *volumeManager) WaitForAttachAndMount(pod *v1.Pod) error {
 	if pod == nil {
 		return nil
